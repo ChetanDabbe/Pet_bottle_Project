@@ -14,16 +14,17 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
 app = Flask(__name__)
-
 CORS(app, origins=["https://pet-bottle-project.vercel.app/"], supports_credentials=True)
 
 video_writer = None
 is_recording = False
 temp_video_path = None
 has_uploaded = False
+timestamp = None
 
 FOLDER_ID = "1gCUc24lLZvV2YllYPlzxXJ9dY6dO24si"  # Google Drive folder
 
+# Get credentials from environment variable
 def get_credentials_from_env():
     encoded_credentials = os.getenv("GOOGLE_CREDENTIALS_BASE64")
     if not encoded_credentials:
@@ -35,16 +36,17 @@ def get_credentials_from_env():
         scopes=["https://www.googleapis.com/auth/drive"]
     )
 
-def upload_to_drive(file_path):
+# Upload video to Google Drive
+def upload_to_drive(file_path, timestamp):
     print(f"[DRIVE] Uploading to Google Drive: {file_path}")
     credentials = get_credentials_from_env()
     service = build("drive", "v3", credentials=credentials)
 
     file_metadata = {
-        "name": os.path.basename(file_path),
+        "name": f"PET_Bottle_Scan_{timestamp}.mp4",
         "parents": [FOLDER_ID]
     }
-    media = MediaFileUpload(file_path, mimetype="video/avi")
+    media = MediaFileUpload(file_path, mimetype="video/mp4")
     uploaded_file = service.files().create(
         body=file_metadata, media_body=media, fields="id"
     ).execute()
@@ -88,13 +90,13 @@ def stream():
 
 @app.route('/start_recording', methods=['POST'])
 def start_recording():
-    global video_writer, is_recording, temp_video_path, has_uploaded
+    global video_writer, is_recording, temp_video_path, has_uploaded, timestamp
     timestamp = time.strftime("%Y%m%d-%H%M%S")
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".avi")
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
     temp_video_path = temp_file.name
     temp_file.close()
 
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     fps = 10
     resolution = (640, 480)
 
@@ -110,7 +112,7 @@ def start_recording():
 
 @app.route('/stop_recording', methods=['POST'])
 def stop_recording():
-    global video_writer, is_recording, temp_video_path, has_uploaded
+    global video_writer, is_recording, temp_video_path, has_uploaded, timestamp
 
     if not is_recording or has_uploaded:
         return jsonify({"message": "Recording already stopped or uploaded"}), 400
@@ -123,7 +125,7 @@ def stop_recording():
 
     try:
         has_uploaded = True
-        drive_link = upload_to_drive(temp_video_path)
+        drive_link = upload_to_drive(temp_video_path, timestamp)
         os.remove(temp_video_path)
         return jsonify({"message": "Recording stopped", "video_link": drive_link})
     except Exception as e:
