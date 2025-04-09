@@ -14,7 +14,8 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+
+CORS(app, origins=["https://pet-bottle-project.vercel.app/"], supports_credentials=True)
 
 video_writer = None
 is_recording = False
@@ -23,7 +24,6 @@ has_uploaded = False
 
 FOLDER_ID = "1gCUc24lLZvV2YllYPlzxXJ9dY6dO24si"  # Google Drive folder
 
-# ✅ Get credentials from base64 env var
 def get_credentials_from_env():
     encoded_credentials = os.getenv("GOOGLE_CREDENTIALS_BASE64")
     if not encoded_credentials:
@@ -35,7 +35,6 @@ def get_credentials_from_env():
         scopes=["https://www.googleapis.com/auth/drive"]
     )
 
-# ✅ Upload video to Google Drive
 def upload_to_drive(file_path):
     print(f"[DRIVE] Uploading to Google Drive: {file_path}")
     credentials = get_credentials_from_env()
@@ -56,7 +55,6 @@ def upload_to_drive(file_path):
     print(f"[DRIVE] ✅ Uploaded: {drive_url}")
     return drive_url
 
-# ✅ Handle image stream
 @app.route('/stream', methods=['POST'])
 def stream():
     global video_writer, is_recording
@@ -88,7 +86,6 @@ def stream():
         print("[ERROR] /stream:", e)
         return jsonify({"error": str(e)}), 500
 
-# ✅ Start recording
 @app.route('/start_recording', methods=['POST'])
 def start_recording():
     global video_writer, is_recording, temp_video_path, has_uploaded
@@ -98,7 +95,7 @@ def start_recording():
     temp_file.close()
 
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    fps = 10  # match frontend stream FPS
+    fps = 10
     resolution = (640, 480)
 
     video_writer = cv2.VideoWriter(temp_video_path, fourcc, fps, resolution)
@@ -111,7 +108,6 @@ def start_recording():
     print(f"[RECORDING] Started: {temp_video_path}")
     return jsonify({"message": "Recording started"})
 
-# ✅ Stop recording and upload to Drive
 @app.route('/stop_recording', methods=['POST'])
 def stop_recording():
     global video_writer, is_recording, temp_video_path, has_uploaded
@@ -138,7 +134,6 @@ def stop_recording():
 def home():
     return "✅ Flask backend running on Render!"
 
-# ✅ Run the Flask server
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
