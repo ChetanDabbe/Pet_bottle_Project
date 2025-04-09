@@ -22,7 +22,7 @@
 
 // //     try {
 // //       const res = await axios.post(
-// //         `${process.env.REACT_APP_BACKEND_URI}/stream`,
+// //         `${process.env.REACT_APP_BACKEND_URL}/stream`,
 // //         { image: imageData }
 // //       );
 // //       console.log("📸 Frame sent | Defects:", res.data.defects);
@@ -42,7 +42,7 @@
 
 // //       intervalId.current = setInterval(captureFrame, 1000); // 1 second frame interval
 
-// //       const res = await axios.post(`${process.env.REACT_APP_BACKEND_URI}/start_recording`);
+// //       const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/start_recording`);
 // //       console.log("🎥 Recording started:", res.data.message);
 // //     } catch (err) {
 // //       console.error("❌ Camera or backend error:", err);
@@ -61,7 +61,7 @@
 // //     }
 
 // //     try {
-// //       const res = await axios.post(`${process.env.REACT_APP_BACKEND_URI}/stop_recording`);
+// //       const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/stop_recording`);
 // //       console.log("🛑 Recording stopped:", res.data.message);
 // //       if (res.data.video_link) {
 // //         setVideoLink(res.data.video_link);
@@ -134,7 +134,7 @@
 
 //     try {
 //       const res = await axios.post(
-//         `${process.env.REACT_APP_BACKEND_URI}/stream`,
+//         `${process.env.REACT_APP_BACKEND_URL}/stream`,
 //         { image: imageData }
 //       );
 //       console.log("📸 Frame sent | Defects:", res.data.defects);
@@ -153,7 +153,7 @@
 //       }
 
 //       intervalId.current = setInterval(captureFrame, 1000); // 1 second interval
-//       const res = await axios.post(`${process.env.REACT_APP_BACKEND_URI}/start_recording`);
+//       const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/start_recording`);
 //       console.log("🎥 Recording started:", res.data.message);
 //     } catch (err) {
 //       console.error("❌ Camera or backend error:", err);
@@ -172,7 +172,7 @@
 //     }
 
 //     try {
-//       const res = await axios.post(`${process.env.REACT_APP_BACKEND_URI}/stop_recording`);
+//       const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/stop_recording`);
 //       console.log("🛑 Recording stopped:", res.data.message);
 
 //       if (res.data.video_link) {
@@ -240,7 +240,7 @@ function LiveFeed() {
   const mediaStream = useRef(null);
   const intervalId = useRef(null);
 
-  const BACKEND_URI = process.env.REACT_APP_BACKEND_URI;
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
   const captureFrame = useCallback(async () => {
     if (!videoRef.current) return;
@@ -255,14 +255,14 @@ function LiveFeed() {
     const imageData = canvas.toDataURL("image/jpeg");
 
     try {
-      const res = await axios.post(`${BACKEND_URI}/stream`, {
+      const res = await axios.post(`${BACKEND_URL}/stream`, {
         image: imageData,
       });
       console.log("📸 Frame sent | Defects:", res.data.defects);
     } catch (error) {
       console.error("❌ Error streaming frame:", error);
     }
-  }, [BACKEND_URI]);
+  }, [BACKEND_URL]);
 
   const startStreaming = useCallback(async () => {
     try {
@@ -275,12 +275,12 @@ function LiveFeed() {
 
       intervalId.current = setInterval(captureFrame, 1000); // Send frame every second
 
-      const res = await axios.post(`${BACKEND_URI}/start_recording`);
+      const res = await axios.post(`${BACKEND_URL}/start_recording`);
       console.log("🎥 Recording started:", res.data.message);
     } catch (err) {
       console.error("❌ Camera or backend error:", err);
     }
-  }, [captureFrame, BACKEND_URI]);
+  }, [captureFrame, BACKEND_URL]);
 
   const stopStreaming = useCallback(async () => {
     if (mediaStream.current) {
@@ -294,7 +294,7 @@ function LiveFeed() {
     }
 
     try {
-      const res = await axios.post(`${BACKEND_URI}/stop_recording`);
+      const res = await axios.post(`${BACKEND_URL}/stop_recording`);
       console.log("🛑 Recording stopped:", res.data.message);
 
       if (res.data.video_link) {
@@ -304,7 +304,7 @@ function LiveFeed() {
     } catch (error) {
       console.error("❌ Error stopping recording:", error);
     }
-  }, [BACKEND_URI]);
+  }, [BACKEND_URL]);
 
   useEffect(() => {
     if (scanning) {
