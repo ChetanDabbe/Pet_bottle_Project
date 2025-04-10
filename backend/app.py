@@ -14,7 +14,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
 app = Flask(__name__)
-CORS(app)  # Allow all origins for testing; restrict in prod
+CORS(app)
 
 video_writer = None
 is_recording = False
@@ -22,9 +22,8 @@ temp_video_path = None
 has_uploaded = False
 timestamp = None
 
-FOLDER_ID = "1gCUc24lLZvV2YllYPlzxXJ9dY6dO24si"  # Google Drive folder
+FOLDER_ID = "1gCUc24lLZvV2YllYPlzxXJ9dY6dO24si"
 
-# Google Drive credentials from env
 def get_credentials_from_env():
     encoded_credentials = os.getenv("GOOGLE_CREDENTIALS_BASE64")
     if not encoded_credentials:
@@ -36,7 +35,6 @@ def get_credentials_from_env():
         scopes=["https://www.googleapis.com/auth/drive"]
     )
 
-# Upload to Google Drive
 def upload_to_drive(file_path, timestamp):
     print(f"[DRIVE] Uploading to Google Drive: {file_path}")
     credentials = get_credentials_from_env()
@@ -57,7 +55,6 @@ def upload_to_drive(file_path, timestamp):
     print(f"[DRIVE] ✅ Uploaded: {drive_url}")
     return drive_url
 
-# 🔁 STREAM endpoint using multipart/form-data
 @app.route('/stream', methods=['POST'])
 def stream():
     global video_writer, is_recording
