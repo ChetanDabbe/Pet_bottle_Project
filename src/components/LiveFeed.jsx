@@ -240,34 +240,27 @@ function LiveFeed() {
   const mediaStream = useRef(null);
   const intervalId = useRef(null);
 
-  const captureFrame = useCallback(async () => {
-    if (!videoRef.current) return;
+  const captureFrame = async () => {
+    if (!videoRef.current || !canvasRef.current || !scanning) return;
   
-    const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth || 640;
-    canvas.height = videoRef.current.videoHeight || 480;
+    const context = canvasRef.current.getContext("2d");
+    context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
   
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-  
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
-  
+    canvasRef.current.toBlob(async (blob) => {
       const formData = new FormData();
-      formData.append("frame", blob, "frame.jpg");
+      formData.append("image", blob, "frame.jpg");
   
       try {
-        const res = await axios.post(`${BACKEND_URL}/stream`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data"
-          }
-        });
-        console.log("📸 Frame sent | Defects:", res.data.defects);
-      } catch (error) {
-        console.error("❌ Error streaming frame:", error);
+        const response = await axios.post(`${BACKEND_URL}/stream`, formData);
+        const { processed_image, defects } = response.data;
+  
+        // Optional: setPreviewImage(processed_image), show defects etc.
+      } catch (err) {
+        console.error("Stream error:", err);
       }
     }, "image/jpeg");
-  }, [BACKEND_URL]);
+  };
+  
   
 
   const startStreaming = useCallback(async () => {

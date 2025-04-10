@@ -14,7 +14,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
 app = Flask(__name__)
-CORS(app, origins=["https://pet-bottle-project.vercel.app/"], supports_credentials=True)
+CORS(app)  # Allow all origins for testing; restrict in prod
 
 video_writer = None
 is_recording = False
@@ -24,7 +24,7 @@ timestamp = None
 
 FOLDER_ID = "1gCUc24lLZvV2YllYPlzxXJ9dY6dO24si"  # Google Drive folder
 
-# Get credentials from environment variable
+# Google Drive credentials from env
 def get_credentials_from_env():
     encoded_credentials = os.getenv("GOOGLE_CREDENTIALS_BASE64")
     if not encoded_credentials:
@@ -36,7 +36,7 @@ def get_credentials_from_env():
         scopes=["https://www.googleapis.com/auth/drive"]
     )
 
-# Upload video to Google Drive
+# Upload to Google Drive
 def upload_to_drive(file_path, timestamp):
     print(f"[DRIVE] Uploading to Google Drive: {file_path}")
     credentials = get_credentials_from_env()
@@ -57,22 +57,23 @@ def upload_to_drive(file_path, timestamp):
     print(f"[DRIVE] ✅ Uploaded: {drive_url}")
     return drive_url
 
+# 🔁 STREAM endpoint using multipart/form-data
 @app.route('/stream', methods=['POST'])
 def stream():
     global video_writer, is_recording
     try:
-        if 'frame' not in request.files:
-            return jsonify({"error": "No frame part"}), 400
+        if 'image' not in request.files:
+            return jsonify({"error": "No image file in request"}), 400
 
-        file = request.files['frame']
-        file_bytes = file.read()
-        nparr = np.frombuffer(file_bytes, np.uint8)
+        file = request.files['image']
+        frame_bytes = file.read()
+        nparr = np.frombuffer(frame_bytes, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if frame is None:
-            raise ValueError("Decoded frame is None")
+            return jsonify({"error": "Failed to decode frame"}), 400
 
-        print(f"[STREAM] Received frame: {frame.shape}")
+        print(f"[STREAM] Frame received: {frame.shape}")
         processed_image_base64, defects = process_image(frame)
 
         if is_recording and video_writer:
@@ -90,6 +91,9 @@ def stream():
 @app.route('/start_recording', methods=['POST'])
 def start_recording():
     global video_writer, is_recording, temp_video_path, has_uploaded, timestamp
+    if is_recording:
+        return jsonify({"message": "Recording already started"}), 400
+
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
     temp_video_path = temp_file.name
@@ -113,8 +117,10 @@ def start_recording():
 def stop_recording():
     global video_writer, is_recording, temp_video_path, has_uploaded, timestamp
 
-    if not is_recording or has_uploaded:
-        return jsonify({"message": "Recording already stopped or uploaded"}), 400
+    if not is_recording:
+        return jsonify({"message": "Not currently recording"}), 400
+    if has_uploaded:
+        return jsonify({"message": "Already uploaded"}), 400
 
     is_recording = False
 
@@ -133,7 +139,7 @@ def stop_recording():
 
 @app.route('/')
 def home():
-    return "✅ Flask backend running on Render!"
+    return "✅ Flask backend is running!"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
