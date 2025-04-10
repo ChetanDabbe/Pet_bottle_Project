@@ -240,29 +240,35 @@ function LiveFeed() {
   const mediaStream = useRef(null);
   const intervalId = useRef(null);
 
-  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-
   const captureFrame = useCallback(async () => {
     if (!videoRef.current) return;
-
+  
     const canvas = document.createElement("canvas");
     canvas.width = videoRef.current.videoWidth || 640;
     canvas.height = videoRef.current.videoHeight || 480;
-
+  
     const ctx = canvas.getContext("2d");
     ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-
-    const imageData = canvas.toDataURL("image/jpeg");
-
-    try {
-      const res = await axios.post(`${BACKEND_URL}/stream`, {
-        image: imageData,
-      });
-      console.log("📸 Frame sent | Defects:", res.data.defects);
-    } catch (error) {
-      console.error("❌ Error streaming frame:", error);
-    }
+  
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+  
+      const formData = new FormData();
+      formData.append("frame", blob, "frame.jpg");
+  
+      try {
+        const res = await axios.post(`${BACKEND_URL}/stream`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data"
+          }
+        });
+        console.log("📸 Frame sent | Defects:", res.data.defects);
+      } catch (error) {
+        console.error("❌ Error streaming frame:", error);
+      }
+    }, "image/jpeg");
   }, [BACKEND_URL]);
+  
 
   const startStreaming = useCallback(async () => {
     try {

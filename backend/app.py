@@ -61,13 +61,12 @@ def upload_to_drive(file_path, timestamp):
 def stream():
     global video_writer, is_recording
     try:
-        data = request.json
-        if not data or 'image' not in data:
-            raise ValueError("No image field in request")
+        if 'frame' not in request.files:
+            return jsonify({"error": "No frame part"}), 400
 
-        image_data = data['image'].split(",")[1]
-        image_bytes = base64.b64decode(image_data)
-        nparr = np.frombuffer(image_bytes, np.uint8)
+        file = request.files['frame']
+        file_bytes = file.read()
+        nparr = np.frombuffer(file_bytes, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if frame is None:
