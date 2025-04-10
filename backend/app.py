@@ -7,7 +7,7 @@ import os
 import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from detect import process_image
+from detect import process_image  # Make sure this exists
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -16,6 +16,7 @@ from googleapiclient.http import MediaFileUpload
 app = Flask(__name__)
 CORS(app)
 
+# Global state (ensure thread safety if scaling)
 video_writer = None
 is_recording = False
 temp_video_path = None
@@ -99,7 +100,6 @@ def start_recording():
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     fps = 10
     resolution = (640, 480)
-
     video_writer = cv2.VideoWriter(temp_video_path, fourcc, fps, resolution)
 
     if not video_writer.isOpened():
